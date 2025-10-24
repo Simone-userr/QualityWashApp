@@ -1,6 +1,5 @@
 package com.example.qualitywash.ui.Screen
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,7 +8,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,29 +26,23 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import com.example.qualitywash.ui.Data.UserRepository
 
 @Composable
-fun RegisterScreen(
-    onRegisterSuccess: () -> Unit = {},
-    onNavigateToLogin: () -> Unit = {}
+fun LoginScreen(
+    onLoginSuccess: () -> Unit = {},
+    onNavigateToRegister: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-
-    var nameError by remember { mutableStateOf<String?>(null) }
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
-    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
-
     var passwordVisible by remember { mutableStateOf(false) }
-    var confirmPasswordVisible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
     val gradientColors = listOf(
@@ -74,9 +71,9 @@ fun RegisterScreen(
 
             // Logo
             Icon(
-                imageVector = Icons.Filled.PersonAdd,
+                imageVector = Icons.Filled.AccountCircle,
                 contentDescription = "Logo",
-                modifier = Modifier.size(100.dp),
+                modifier = Modifier.size(120.dp),
                 tint = Color.White
             )
 
@@ -84,7 +81,7 @@ fun RegisterScreen(
 
             // Título
             Text(
-                text = "Crear Cuenta",
+                text = "Iniciar Sesión",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -94,12 +91,12 @@ fun RegisterScreen(
 
             // Subtítulo
             Text(
-                text = "Regístrate para comenzar",
+                text = "Bienvenido de nuevo",
                 fontSize = 16.sp,
                 color = Color.White.copy(alpha = 0.7f)
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             // Card contenedor
             Card(
@@ -111,53 +108,6 @@ fun RegisterScreen(
                 Column(
                     modifier = Modifier.padding(24.dp)
                 ) {
-                    // Nombre Input
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = {
-                            name = it
-                            nameError = validateName(it)
-                        },
-                        label = { Text("Nombre completo") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Person,
-                                contentDescription = "Nombre"
-                            )
-                        },
-                        trailingIcon = {
-                            if (name.isNotEmpty()) {
-                                IconButton(onClick = { name = "" }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Clear,
-                                        contentDescription = "Limpiar"
-                                    )
-                                }
-                            }
-                        },
-                        isError = nameError != null,
-                        supportingText = {
-                            nameError?.let {
-                                Text(
-                                    text = it,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Next
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        ),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
                     // Email Input
                     OutlinedTextField(
                         value = email,
@@ -211,10 +161,6 @@ fun RegisterScreen(
                         onValueChange = {
                             password = it
                             passwordError = validatePassword(it)
-                            // Re-validar confirmación si ya tiene contenido
-                            if (confirmPassword.isNotEmpty()) {
-                                confirmPasswordError = validateConfirmPassword(password, confirmPassword)
-                            }
                         },
                         label = { Text("Contraseña") },
                         leadingIcon = {
@@ -257,78 +203,15 @@ fun RegisterScreen(
                         },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Next
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        ),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Confirm Password Input
-                    OutlinedTextField(
-                        value = confirmPassword,
-                        onValueChange = {
-                            confirmPassword = it
-                            confirmPasswordError = validateConfirmPassword(password, it)
-                        },
-                        label = { Text("Confirmar contraseña") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Lock,
-                                contentDescription = "Confirmar contraseña"
-                            )
-                        },
-                        trailingIcon = {
-                            IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
-                                Icon(
-                                    imageVector = if (confirmPasswordVisible)
-                                        Icons.Filled.RemoveRedEye
-                                    else
-                                        Icons.Filled.Lock,
-                                    contentDescription = if (confirmPasswordVisible)
-                                        "Ocultar contraseña"
-                                    else
-                                        "Mostrar contraseña"
-                                )
-                            }
-                        },
-                        visualTransformation = if (confirmPasswordVisible)
-                            VisualTransformation.None
-                        else
-                            PasswordVisualTransformation(),
-                        isError = confirmPasswordError != null,
-                        supportingText = {
-                            confirmPasswordError?.let {
-                                Text(
-                                    text = it,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Done
                         ),
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 focusManager.clearFocus()
-                                attemptRegister(
-                                    context,
-                                    name, email, password, confirmPassword,
-                                    nameError, emailError, passwordError, confirmPasswordError,
-                                    onUpdateErrors = { n, e, p, c ->
-                                        nameError = n
-                                        emailError = e
-                                        passwordError = p
-                                        confirmPasswordError = c
-                                    },
-                                    onSuccess = onRegisterSuccess
-                                )
+                                if (emailError == null && passwordError == null &&
+                                    email.isNotEmpty() && password.isNotEmpty()) {
+                                    onLoginSuccess()
+                                }
                             }
                         ),
                         singleLine = true,
@@ -336,23 +219,34 @@ fun RegisterScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    // Botón de Registro
+                    // Olvidé mi contraseña
+                    TextButton(
+                        onClick = { /* Acción de recuperar contraseña */ },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(
+                            text = "¿Olvidaste tu contraseña?",
+                            color = Color(0xFF667eea),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Botón de Login
                     Button(
                         onClick = {
-                            attemptRegister(
-                                context,
-                                name, email, password, confirmPassword,
-                                nameError, emailError, passwordError, confirmPasswordError,
-                                onUpdateErrors = { n, e, p, c ->
-                                    nameError = n
-                                    emailError = e
-                                    passwordError = p
-                                    confirmPasswordError = c
-                                },
-                                onSuccess = onRegisterSuccess
-                            )
+                            val finalEmailError = validateEmail(email)
+                            val finalPasswordError = validatePassword(password)
+
+                            emailError = finalEmailError
+                            passwordError = finalPasswordError
+
+                            if (finalEmailError == null && finalPasswordError == null) {
+                                onLoginSuccess()
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -363,7 +257,7 @@ fun RegisterScreen(
                         )
                     ) {
                         Text(
-                            text = "Registrarse",
+                            text = "Iniciar Sesión",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -373,41 +267,30 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Ya tengo cuenta
+            // Registro
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "¿Ya tienes cuenta? ",
+                    text = "¿No tienes cuenta? ",
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
-                TextButton(onClick = onNavigateToLogin) {
+                TextButton(onClick = onNavigateToRegister) {
                     Text(
-                        text = "Inicia sesión",
+                        text = "Regístrate",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 // Funciones de validación
-private fun validateName(name: String): String? {
-    return when {
-        name.isEmpty() -> "El nombre es requerido"
-        name.length < 3 -> "El nombre debe tener al menos 3 caracteres"
-        !name.matches(Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$")) -> "Solo se permiten letras"
-        else -> null
-    }
-}
-
 private fun validateEmail(email: String): String? {
     return when {
         email.isEmpty() -> "El email es requerido"
@@ -423,56 +306,5 @@ private fun validatePassword(password: String): String? {
         !password.any { it.isUpperCase() } -> "Debe contener al menos una mayúscula"
         !password.any { it.isDigit() } -> "Debe contener al menos un número"
         else -> null
-    }
-}
-
-private fun validateConfirmPassword(password: String, confirmPassword: String): String? {
-    return when {
-        confirmPassword.isEmpty() -> "Confirma tu contraseña"
-        password != confirmPassword -> "Las contraseñas no coinciden"
-        else -> null
-    }
-}
-
-private fun attemptRegister(
-    context: android.content.Context,
-    name: String,
-    email: String,
-    password: String,
-    confirmPassword: String,
-    nameError: String?,
-    emailError: String?,
-    passwordError: String?,
-    confirmPasswordError: String?,
-    onUpdateErrors: (String?, String?, String?, String?) -> Unit,
-    onSuccess: () -> Unit
-) {
-    val finalNameError = validateName(name)
-    val finalEmailError = validateEmail(email)
-    val finalPasswordError = validatePassword(password)
-    val finalConfirmPasswordError = validateConfirmPassword(password, confirmPassword)
-
-    onUpdateErrors(
-        finalNameError,
-        finalEmailError,
-        finalPasswordError,
-        finalConfirmPasswordError
-    )
-
-    if (finalNameError == null &&
-        finalEmailError == null &&
-        finalPasswordError == null &&
-        finalConfirmPasswordError == null) {
-
-        // Registrar usuario en el repositorio
-        val (success, message) = UserRepository.registerUser(name, email, password)
-
-        if (success) {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            onSuccess()
-        } else {
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            onUpdateErrors(null, message, null, null)
-        }
     }
 }
