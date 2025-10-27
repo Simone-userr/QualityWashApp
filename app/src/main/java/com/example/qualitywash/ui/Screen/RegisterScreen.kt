@@ -231,9 +231,9 @@ fun RegisterScreen(
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
                                     imageVector = if (passwordVisible)
-                                        Icons.Filled.RemoveRedEye
+                                        Icons.Filled.Visibility
                                     else
-                                        Icons.Filled.Lock,
+                                        Icons.Filled.VisibilityOff,
                                     contentDescription = if (passwordVisible)
                                         "Ocultar contraseña"
                                     else
@@ -291,9 +291,9 @@ fun RegisterScreen(
                             IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                                 Icon(
                                     imageVector = if (confirmPasswordVisible)
-                                        Icons.Filled.RemoveRedEye
+                                        Icons.Filled.Visibility
                                     else
-                                        Icons.Filled.Lock,
+                                        Icons.Filled.VisibilityOff,
                                     contentDescription = if (confirmPasswordVisible)
                                         "Ocultar contraseña"
                                     else

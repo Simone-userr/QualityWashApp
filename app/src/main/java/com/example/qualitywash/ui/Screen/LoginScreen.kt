@@ -1,5 +1,6 @@
 package com.example.qualitywash.ui.Screen
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,11 +9,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.RemoveRedEye
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,19 +17,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import com.example.qualitywash.ui.Data.UserRepository
-@Preview
+
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit = {},
@@ -41,9 +36,9 @@ fun LoginScreen(
     val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
-    var passwordVisible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
     val gradientColors = listOf(
@@ -66,13 +61,12 @@ fun LoginScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
-
             // Logo
             Icon(
-                imageVector = Icons.Filled.AccountCircle,
+                imageVector = Icons.Filled.Wash,
                 contentDescription = "Logo",
                 modifier = Modifier.size(120.dp),
                 tint = Color.White
@@ -82,8 +76,8 @@ fun LoginScreen(
 
             // Título
             Text(
-                text = "Iniciar Sesión",
-                fontSize = 28.sp,
+                text = "Quality Wash",
+                fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
@@ -92,12 +86,12 @@ fun LoginScreen(
 
             // Subtítulo
             Text(
-                text = " ",
+                text = "Bienvenido de nuevo",
                 fontSize = 16.sp,
                 color = Color.White.copy(alpha = 0.7f)
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
             // Card contenedor
             Card(
@@ -114,7 +108,7 @@ fun LoginScreen(
                         value = email,
                         onValueChange = {
                             email = it
-                            emailError = validateEmail(it)
+                            emailError = null
                         },
                         label = { Text("Email") },
                         leadingIcon = {
@@ -161,7 +155,7 @@ fun LoginScreen(
                         value = password,
                         onValueChange = {
                             password = it
-                            passwordError = validatePassword(it)
+                            passwordError = null
                         },
                         label = { Text("Contraseña") },
                         leadingIcon = {
@@ -174,9 +168,9 @@ fun LoginScreen(
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
                                     imageVector = if (passwordVisible)
-                                        Icons.Filled.RemoveRedEye
+                                        Icons.Filled.Visibility
                                     else
-                                        Icons.Filled.Lock,
+                                        Icons.Filled.VisibilityOff,
                                     contentDescription = if (passwordVisible)
                                         "Ocultar contraseña"
                                     else
@@ -190,15 +184,10 @@ fun LoginScreen(
                             PasswordVisualTransformation(),
                         isError = passwordError != null,
                         supportingText = {
-                            if (passwordError != null) {
+                            passwordError?.let {
                                 Text(
-                                    text = passwordError!!,
+                                    text = it,
                                     color = MaterialTheme.colorScheme.error
-                                )
-                            } else {
-                                Text(
-                                    text = "Mínimo 8 caracteres, 1 mayúscula, 1 número",
-                                    style = MaterialTheme.typography.bodySmall
                                 )
                             }
                         },
@@ -209,10 +198,16 @@ fun LoginScreen(
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 focusManager.clearFocus()
-                                if (emailError == null && passwordError == null &&
-                                    email.isNotEmpty() && password.isNotEmpty()) {
-                                    onLoginSuccess()
-                                }
+                                attemptLogin(
+                                    context = context,
+                                    email = email,
+                                    password = password,
+                                    onUpdateErrors = { e, p ->
+                                        emailError = e
+                                        passwordError = p
+                                    },
+                                    onSuccess = onLoginSuccess
+                                )
                             }
                         ),
                         singleLine = true,
@@ -220,34 +215,21 @@ fun LoginScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Olvidé mi contraseña
-                    TextButton(
-                        onClick = { /* Acción de recuperar contraseña */ },
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text(
-                            text = "¿Olvidaste tu contraseña?",
-                            color = Color(0xFF667eea),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     // Botón de Login
                     Button(
                         onClick = {
-                            val finalEmailError = validateEmail(email)
-                            val finalPasswordError = validatePassword(password)
-
-                            emailError = finalEmailError
-                            passwordError = finalPasswordError
-
-                            if (finalEmailError == null && finalPasswordError == null) {
-                                onLoginSuccess()
-                            }
+                            attemptLogin(
+                                context = context,
+                                email = email,
+                                password = password,
+                                onUpdateErrors = { e, p ->
+                                    emailError = e
+                                    passwordError = p
+                                },
+                                onSuccess = onLoginSuccess
+                            )
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -268,7 +250,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Registro
+            // No tengo cuenta
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
@@ -287,25 +269,74 @@ fun LoginScreen(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Usuarios de prueba
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White.copy(alpha = 0.2f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "👤 Usuarios de prueba:",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "demo@mail.com / Demo123",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        text = "admin@mail.com / Admin123",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 11.sp
+                    )
+                }
+            }
         }
     }
 }
 
-// Funciones de validación
-private fun validateEmail(email: String): String? {
-    return when {
+private fun attemptLogin(
+    context: android.content.Context,
+    email: String,
+    password: String,
+    onUpdateErrors: (String?, String?) -> Unit,
+    onSuccess: () -> Unit
+) {
+    // Validaciones básicas
+    val emailError = when {
         email.isEmpty() -> "El email es requerido"
         !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Email inválido"
         else -> null
     }
-}
 
-private fun validatePassword(password: String): String? {
-    return when {
+    val passwordError = when {
         password.isEmpty() -> "La contraseña es requerida"
-        password.length < 8 -> "Mínimo 8 caracteres"
-        !password.any { it.isUpperCase() } -> "Debe contener al menos una mayúscula"
-        !password.any { it.isDigit() } -> "Debe contener al menos un número"
         else -> null
+    }
+
+    onUpdateErrors(emailError, passwordError)
+
+    if (emailError == null && passwordError == null) {
+        // Intentar login
+        val (success, message) = UserRepository.loginUser(email, password)
+
+        if (success) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            onSuccess()
+        } else {
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            onUpdateErrors(null, message)
+        }
     }
 }

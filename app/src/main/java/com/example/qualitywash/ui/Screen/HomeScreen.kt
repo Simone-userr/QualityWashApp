@@ -26,7 +26,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onNavigateToWash: () -> Unit = {}
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -44,6 +45,10 @@ fun HomeScreen(
                     scope.launch { drawerState.close() }
                     UserRepository.logoutUser()
                     onLogout()
+                },
+                onNavigateToWash = {
+                    scope.launch { drawerState.close() }
+                    onNavigateToWash()
                 }
             )
         }
@@ -89,7 +94,8 @@ fun HomeScreen(
 fun DrawerContent(
     currentUser: User?,
     onCloseDrawer: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToWash: () -> Unit = {}
 ) {
     ModalDrawerSheet(
         drawerContainerColor = Color.White
@@ -144,7 +150,6 @@ fun DrawerContent(
                 title = "Perfil",
                 onClick = {
                     onCloseDrawer()
-                    // Navegar a perfil
                 }
             )
 
@@ -153,7 +158,15 @@ fun DrawerContent(
                 title = "Tienda",
                 onClick = {
                     onCloseDrawer()
-                    // Navegar a tienda
+                }
+            )
+
+            DrawerMenuItem(
+                icon = Icons.Filled.Wash,
+                title = "Lavado",
+                onClick = {
+                    onCloseDrawer()
+                    onNavigateToWash()
                 }
             )
 
@@ -162,7 +175,6 @@ fun DrawerContent(
                 title = "Servicios",
                 onClick = {
                     onCloseDrawer()
-                    // Navegar a servicios
                 }
             )
 

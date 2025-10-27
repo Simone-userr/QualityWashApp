@@ -3,60 +3,37 @@ package com.example.qualitywash
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import com.example.qualitywash.ui.Screen.HomeScreen
-import com.example.qualitywash.ui.Screen.LoginScreen
-import com.example.qualitywash.ui.Screen.RegisterScreen
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
+import com.example.qualitywash.ui.Data.UserRepository
+import com.example.qualitywash.ui.Navigation.AppNavigation
+import com.example.qualitywash.ui.Navigation.Routes
 import com.example.qualitywash.ui.theme.QualityWashTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
         setContent {
             QualityWashTheme {
-                AppNavigation()
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    // Determina la pantalla inicial basándose en si hay usuario logueado
+                    val startDestination = if (UserRepository.isUserLoggedIn()) {
+                        Routes.HOME
+                    } else {
+                        Routes.LOGIN
+                    }
+
+                    AppNavigation(startDestination = startDestination)
+                }
             }
-        }
-    }
-}
-
-@Composable
-fun AppNavigation() {
-    var currentScreen by remember { mutableStateOf("login") }
-
-    when (currentScreen) {
-        "login" -> {
-            LoginScreen(
-                onLoginSuccess = {
-                    currentScreen = "home"
-                },
-                onNavigateToRegister = {
-                    currentScreen = "register"
-                }
-            )
-        }
-
-        "register" -> {
-            RegisterScreen(
-                onRegisterSuccess = {
-                    currentScreen = "home"
-                },
-                onNavigateToLogin = {
-                    currentScreen = "login"
-                }
-            )
-        }
-
-        "home" -> {
-            HomeScreen(
-                onLogout = {
-                    currentScreen = "login"
-                }
-            )
         }
     }
 }
