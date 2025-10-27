@@ -28,7 +28,8 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     onLogout: () -> Unit = {},
     onNavigateToWash: () -> Unit = {},
-    onNavigateToPerfil: () -> Unit
+    onNavigateToPerfil: () -> Unit,
+    onNavigateToTienda: () -> Unit = {}
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -51,8 +52,11 @@ fun HomeScreen(
                     scope.launch { drawerState.close() }
                     onNavigateToWash()
                 },
-                onNavigateToPerfil = onNavigateToPerfil
-
+                onNavigateToPerfil = onNavigateToPerfil,
+                onNavigateToTienda = {
+                    scope.launch { drawerState.close() }
+                    onNavigateToTienda()
+                }
             )
         }
     ) {
@@ -99,7 +103,8 @@ fun DrawerContent(
     onCloseDrawer: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToWash: () -> Unit = {},
-    onNavigateToPerfil: () -> Unit
+    onNavigateToPerfil: () -> Unit,
+    onNavigateToTienda: () -> Unit = {}
 
 ) {
     ModalDrawerSheet(
@@ -164,6 +169,7 @@ fun DrawerContent(
                 title = "Tienda",
                 onClick = {
                     onCloseDrawer()
+                    onNavigateToTienda()
                 }
             )
 

@@ -9,6 +9,7 @@ import com.example.qualitywash.ui.Screen.HomeScreen
 import com.example.qualitywash.ui.Screen.LoginScreen
 import com.example.qualitywash.ui.Screen.PerfilScreen
 import com.example.qualitywash.ui.Screen.RegisterScreen
+import com.example.qualitywash.ui.Screen.TiendaScreen
 import com.example.qualitywash.ui.Screen.WashScreen
 
 // Definición de rutas
@@ -18,6 +19,8 @@ object Routes {
     const val HOME = "home"
     const val WASH = "wash"
     const val PERFIL = "perfil"
+
+    const val TIENDA = "tienda"
 }
 
 @Composable
@@ -76,6 +79,9 @@ fun AppNavigation(
                 },
                 onNavigateToPerfil = {
                     navController.navigate(Routes.PERFIL)
+                },
+                onNavigateToTienda = {
+                    navController.navigate(Routes.TIENDA)
                 }
             )
         }
@@ -101,6 +107,15 @@ fun AppNavigation(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
+            )
+        }
+
+        composable(Routes.TIENDA) {
+            TiendaScreen (
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+
             )
         }
     }
