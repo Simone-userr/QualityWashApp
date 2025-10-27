@@ -33,10 +33,7 @@ object UserRepository {
         )
     }
 
-    /**
-     * Registra un nuevo usuario
-     * @return Pair<Boolean, String> - (éxito, mensaje)
-     */
+
     fun registerUser(name: String, email: String, password: String): Pair<Boolean, String> {
         // Verificar si el email ya existe
         if (users.any { it.email.equals(email, ignoreCase = true) }) {
@@ -57,10 +54,7 @@ object UserRepository {
         return Pair(true, "Registro exitoso")
     }
 
-    /**
-     * Inicia sesión con email y contraseña
-     * @return Pair<Boolean, String> - (éxito, mensaje)
-     */
+
     fun loginUser(email: String, password: String): Pair<Boolean, String> {
         val user = users.find {
             it.email.equals(email, ignoreCase = true) && it.password == password
@@ -74,37 +68,26 @@ object UserRepository {
         }
     }
 
-    /**
-     * Cierra la sesión del usuario actual
-     */
+
     fun logoutUser() {
         currentUser = null
     }
 
-    /**
-     * Obtiene el usuario actualmente logueado
-     */
+
     fun getCurrentUser(): User? {
         return currentUser
     }
 
-    /**
-     * Verifica si hay un usuario logueado
-     */
+
     fun isUserLoggedIn(): Boolean {
         return currentUser != null
     }
 
-    /**
-     * Obtiene todos los usuarios registrados (para debugging)
-     */
     fun getAllUsers(): List<User> {
         return users.toList()
     }
 
-    /**
-     * Limpia todos los usuarios (excepto los de prueba)
-     */
+
     fun clearUsers() {
         users.clear()
         currentUser = null

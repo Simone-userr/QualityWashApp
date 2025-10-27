@@ -26,7 +26,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.qualitywash.ui.Data.UserRepository
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.qualitywash.ui.viewModel.LoginViewModel
+import com.example.qualitywash.ui.viewModel.LoginViewModelFactory
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
@@ -34,12 +37,32 @@ fun LoginScreen(
     onNavigateToRegister: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+
+    // 1. Obtener el ViewModel y su estado
+    val viewModel: LoginViewModel = viewModel(factory = LoginViewModelFactory())
+    val uiState by viewModel.uiState.collectAsState()
+
+    // 2. Estado local solo para la visibilidad de la contraseña
     var passwordVisible by remember { mutableStateOf(false) }
-    var emailError by remember { mutableStateOf<String?>(null) }
-    var passwordError by remember { mutableStateOf<String?>(null) }
+
     val focusManager = LocalFocusManager.current
+
+    // 3. Efecto para manejar la NAVEGACIÓN después del éxito
+    LaunchedEffect(uiState.isLoginSuccessful) {
+        if (uiState.isLoginSuccessful) {
+            delay(300) // Pequeño delay para mostrar el Toast
+            onLoginSuccess()
+            viewModel.resetLoginState()
+        }
+    }
+
+    // 4. Efecto para mostrar el TOAST (mensajes de error/éxito)
+    LaunchedEffect(uiState.showToastMessage) {
+        uiState.showToastMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            viewModel.consumedToastMessage() // Limpia el estado del mensaje
+        }
+    }
 
     val gradientColors = listOf(
         Color(0xFF667eea),
@@ -105,11 +128,8 @@ fun LoginScreen(
                 ) {
                     // Email Input
                     OutlinedTextField(
-                        value = email,
-                        onValueChange = {
-                            email = it
-                            emailError = null
-                        },
+                        value = uiState.email, // Conectado al ViewModel
+                        onValueChange = viewModel::updateEmail, // Conectado al ViewModel
                         label = { Text("Email") },
                         leadingIcon = {
                             Icon(
@@ -118,8 +138,8 @@ fun LoginScreen(
                             )
                         },
                         trailingIcon = {
-                            if (email.isNotEmpty()) {
-                                IconButton(onClick = { email = "" }) {
+                            if (uiState.email.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.updateEmail("") }) {
                                     Icon(
                                         imageVector = Icons.Filled.Clear,
                                         contentDescription = "Limpiar"
@@ -127,9 +147,9 @@ fun LoginScreen(
                                 }
                             }
                         },
-                        isError = emailError != null,
+                        isError = uiState.emailError != null,
                         supportingText = {
-                            emailError?.let {
+                            uiState.emailError?.let {
                                 Text(
                                     text = it,
                                     color = MaterialTheme.colorScheme.error
@@ -145,18 +165,16 @@ fun LoginScreen(
                         ),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !uiState.isLoading // Deshabilitado durante la carga
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Password Input
                     OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            passwordError = null
-                        },
+                        value = uiState.password, // Conectado al ViewModel
+                        onValueChange = viewModel::updatePassword, // Conectado al ViewModel
                         label = { Text("Contraseña") },
                         leadingIcon = {
                             Icon(
@@ -182,9 +200,9 @@ fun LoginScreen(
                             VisualTransformation.None
                         else
                             PasswordVisualTransformation(),
-                        isError = passwordError != null,
+                        isError = uiState.passwordError != null,
                         supportingText = {
-                            passwordError?.let {
+                            uiState.passwordError?.let {
                                 Text(
                                     text = it,
                                     color = MaterialTheme.colorScheme.error
@@ -198,52 +216,53 @@ fun LoginScreen(
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 focusManager.clearFocus()
-                                attemptLogin(
-                                    context = context,
-                                    email = email,
-                                    password = password,
-                                    onUpdateErrors = { e, p ->
-                                        emailError = e
-                                        passwordError = p
-                                    },
-                                    onSuccess = onLoginSuccess
-                                )
+                                viewModel.login() // Llama a la lógica de login
                             }
                         ),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !uiState.isLoading // Deshabilitado durante la carga
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Botón de Login
+                    // Botón de Login con estado de carga
                     Button(
-                        onClick = {
-                            attemptLogin(
-                                context = context,
-                                email = email,
-                                password = password,
-                                onUpdateErrors = { e, p ->
-                                    emailError = e
-                                    passwordError = p
-                                },
-                                onSuccess = onLoginSuccess
-                            )
-                        },
+                        onClick = viewModel::login, // Llama a la lógica de login
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF667eea)
-                        )
+                        ),
+                        enabled = !uiState.isLoading
                     ) {
-                        Text(
-                            text = "Iniciar Sesión",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (uiState.isLoading) {
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Iniciando sesión...",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "Iniciar Sesión",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -260,7 +279,10 @@ fun LoginScreen(
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
-                TextButton(onClick = onNavigateToRegister) {
+                TextButton(
+                    onClick = onNavigateToRegister,
+                    enabled = !uiState.isLoading
+                ) {
                     Text(
                         text = "Regístrate",
                         color = Color.White,
@@ -302,41 +324,6 @@ fun LoginScreen(
                     )
                 }
             }
-        }
-    }
-}
-
-private fun attemptLogin(
-    context: android.content.Context,
-    email: String,
-    password: String,
-    onUpdateErrors: (String?, String?) -> Unit,
-    onSuccess: () -> Unit
-) {
-    // Validaciones básicas
-    val emailError = when {
-        email.isEmpty() -> "El email es requerido"
-        !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Email inválido"
-        else -> null
-    }
-
-    val passwordError = when {
-        password.isEmpty() -> "La contraseña es requerida"
-        else -> null
-    }
-
-    onUpdateErrors(emailError, passwordError)
-
-    if (emailError == null && passwordError == null) {
-        // Intentar login
-        val (success, message) = UserRepository.loginUser(email, password)
-
-        if (success) {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            onSuccess()
-        } else {
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            onUpdateErrors(null, message)
         }
     }
 }
