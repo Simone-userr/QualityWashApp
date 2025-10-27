@@ -69,7 +69,7 @@ fun PerfilScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = user.name, // 👈 Datos del ViewModel
+                        text = user.name, //  Datos del ViewModel
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -83,7 +83,7 @@ fun PerfilScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = user.email, // 👈 Datos del ViewModel
+                        text = user.email, //  Datos del ViewModel
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )

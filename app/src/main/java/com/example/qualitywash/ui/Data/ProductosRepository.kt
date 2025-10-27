@@ -1,6 +1,7 @@
 
 package com.example.qualitywash.ui.Data
 
+// Modelo de Productos
 data class ProductosRepository(
     val id: Int,
     val nombre: String,
@@ -9,6 +10,7 @@ data class ProductosRepository(
     val imagen: Int // Recurso drawable
 )
 
+// Modelo de Carrito
 data class ItemCarrito(
     val producto: ProductosRepository,
     var cantidad: Int = 1

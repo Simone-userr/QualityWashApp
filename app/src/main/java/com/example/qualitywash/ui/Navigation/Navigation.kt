@@ -70,23 +70,25 @@ fun AppNavigation(
         // 3. Pantalla Home (Rutas sin cambios)
         composable(Routes.HOME) {
             HomeScreen(
-                // La lógica de logout aquí queda como fallback, pero la principal es de PerfilScreen
                 onLogout = {
                     navController.navigate(Routes.LOGIN) { popUpTo(0) { inclusive = true } }
                 },
+                //Navega desde home a WashScreen
                 onNavigateToWash = {
                     navController.navigate(Routes.WASH)
                 },
+                //Navega desde Home a PerfilScreen
                 onNavigateToPerfil = {
                     navController.navigate(Routes.PERFIL)
                 },
+                //Navega desde home a TiendaScreen
                 onNavigateToTienda = {
                     navController.navigate(Routes.TIENDA)
                 }
             )
         }
 
-        // 4. Pantalla de Perfil (Con lógica de Logout completa)
+        // 4. Pantalla de Perfil
         composable(Routes.PERFIL) {
             PerfilScreen(
                 onNavigateBack = {
@@ -101,7 +103,7 @@ fun AppNavigation(
             )
         }
 
-        // 5. Pantalla de Lavado (Rutas sin cambios)
+        // 5. Pantalla de Lavado
         composable(Routes.WASH) {
             WashScreen(
                 onNavigateBack = {
@@ -110,6 +112,7 @@ fun AppNavigation(
             )
         }
 
+        //6. Pantalla de Tienda
         composable(Routes.TIENDA) {
             TiendaScreen (
                 onNavigateBack = {

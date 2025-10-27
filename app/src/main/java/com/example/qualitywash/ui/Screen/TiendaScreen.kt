@@ -207,7 +207,7 @@ fun ProductoCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "$${String.format("%.2f", producto.precio)}",
+                        text = "$${String.format("%.3f", producto.precio)}",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -341,7 +341,7 @@ fun PanelCarrito(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "$${String.format("%.2f", total)}",
+                            text = "$${String.format("%.3f", total)}",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -417,7 +417,7 @@ fun ItemCarritoCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "$${String.format("%.2f", item.producto.precio)}",
+                    text = "$${String.format("%.3f", item.producto.precio)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -476,7 +476,7 @@ fun ItemCarritoCard(
                 }
 
                 Text(
-                    text = "$${String.format("%.2f", item.subtotal)}",
+                    text = "$${String.format("%.3f", item.subtotal)}",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

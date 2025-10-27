@@ -20,7 +20,7 @@ object UserRepository {
                 id = "1",
                 name = "Usuario Demo",
                 email = "demo@mail.com",
-                password = "Demo123"
+                password = "Demo1234"
             )
         )
         users.add(

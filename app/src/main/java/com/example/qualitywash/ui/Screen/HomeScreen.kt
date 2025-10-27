@@ -23,20 +23,25 @@ import com.example.qualitywash.ui.Data.User
 import com.example.qualitywash.ui.Data.UserRepository
 import kotlinx.coroutines.launch
 
+
+//OptIn anotacion que permite utilizar componentes o APIs de material3
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    //Parametros que recibira la funcion para concretar la navegacion entre Screen
     onLogout: () -> Unit = {},
     onNavigateToWash: () -> Unit = {},
     onNavigateToPerfil: () -> Unit,
     onNavigateToTienda: () -> Unit = {}
 ) {
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
-    val currentUser = UserRepository.getCurrentUser()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed) //Crea y recuerda el estado del menu lateral (Drawer)
+    val scope = rememberCoroutineScope()                                     //Obtiene un scope de corrutinas necesario para ejecutar acciones
+    val currentUser = UserRepository.getCurrentUser()                        //Llama al repositorio de datos para obtener infomarcion del usuario actualmente iniciado
 
+    //Componente principal que implementa el menu lateral desplegable
     ModalNavigationDrawer(
         drawerState = drawerState,
+        //drawerContent: define el contenido del menú lateral, llamando al componente DrawerContent y pasándole la lógica para cerrar el menú y navegar/cerrar sesión.
         drawerContent = {
             DrawerContent(
                 currentUser = currentUser,
@@ -60,7 +65,9 @@ fun HomeScreen(
             )
         }
     ) {
+        //La estructura base de la pantalla que organiza los componentes visuales: topBar
         Scaffold(
+            //Define la barra de la aplicación en la parte superior.
             topBar = {
                 TopAppBar(
                     title = {
@@ -69,6 +76,7 @@ fun HomeScreen(
                             fontWeight = FontWeight.Bold
                         )
                     },
+                    //Define el ícono de la izquierda que, al hacer clic, usa el scope.launch { drawerState.open() } para abrir el menú lateral.
                     navigationIcon = {
                         IconButton(onClick = {
                             scope.launch {
@@ -88,7 +96,8 @@ fun HomeScreen(
                     )
                 )
             }
-        ) { paddingValues ->
+        ) { // El área de contenido principal de la pantalla, que se muestra debajo de la barra superior, recibiendo los paddings generados por el Scaffold
+            paddingValues ->
             MainContent(
                 modifier = Modifier.padding(paddingValues),
                 userName = currentUser?.name ?: "Usuario"
@@ -107,6 +116,7 @@ fun DrawerContent(
     onNavigateToTienda: () -> Unit = {}
 
 ) {
+    //Contenedor visual que le da estilo (color, forma) a la hoja del menú lateral.
     ModalDrawerSheet(
         drawerContainerColor = Color.White
     ) {
@@ -114,7 +124,7 @@ fun DrawerContent(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            // Header del drawer
+            //Un contenedor para la sección de bienvenida en la parte superior del menú, que muestra el ícono, nombre y correo del usuario.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -154,7 +164,7 @@ fun DrawerContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Opciones del menú
+            // Un componente reutilizable que se usa para cada opción del menú (Perfil, Tienda, Lavado, etc.).
             DrawerMenuItem(
                 icon = Icons.Filled.Person,
                 title = "Perfil",
@@ -190,6 +200,7 @@ fun DrawerContent(
                 }
             )
 
+            //Una línea horizontal para separar grupos de elementos, como las opciones principales de "Cerrar Sesión".
             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
             DrawerMenuItem(
@@ -217,11 +228,13 @@ fun DrawerContent(
 
 @Composable
 fun DrawerMenuItem(
+    // Recibe los datos y la acción para crear el ítem.
     icon: ImageVector,
     title: String,
     onClick: () -> Unit,
     color: Color = Color(0xFF667eea)
 ) {
+    // Un componente de Material 3 diseñado específicamente para ítems dentro de un menú lateral.
     NavigationDrawerItem(
         icon = {
             Icon(
@@ -237,8 +250,10 @@ fun DrawerMenuItem(
                 fontWeight = FontWeight.Medium
             )
         },
+        //Indica que este ítem no está marcado como actualmente seleccionado
         selected = false,
         onClick = onClick,
+        //Añade espacio horizontal y vertical alrededor del ítem para que no se pegue a los bordes.
         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
     )
 }
@@ -253,7 +268,7 @@ fun MainContent(
         Color(0xFF764ba2),
         Color(0xFFf093fb)
     )
-
+    //Establece un fondo con un degradado de color que ocupa toda la pantalla.
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -263,13 +278,14 @@ fun MainContent(
                 )
             )
     ) {
+        //Permite que el contenido sea desplazable verticalmente si es demasiado largo para la pantalla del dispositivo.
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            // Saludo
+            //Se utiliza el componente Card de Material 3 para crear contenedores visualmente atractivos
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -288,7 +304,7 @@ fun MainContent(
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
-
+                    // Saluda al usuario
                     Text(
                         text = "¡Hola, $userName!",
                         fontSize = 28.sp,
@@ -310,6 +326,7 @@ fun MainContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            //Contiene texto informativo sobre la empresa.
             // Quiénes Somos
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -394,7 +411,7 @@ fun MainContent(
                 color = Color.White,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
-
+            // Un Row que contiene dos QuickAccessCards, permitiendo al usuario ir rápidamente a Tienda o Servicios. (no funcional preferible por el menu lateral)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -402,7 +419,7 @@ fun MainContent(
                 QuickAccessCard(
                     icon = Icons.Filled.ShoppingCart,
                     title = "Tienda",
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 QuickAccessCard(
                     icon = Icons.Filled.Build,
@@ -418,6 +435,7 @@ fun MainContent(
 
 @Composable
 fun FeatureItem(icon: ImageVector, text: String) {
+    //Una Row simple que alinea un ícono y un texto, utilizado para las características de la empresa en la sección "Quiénes Somos".
     Row(
         modifier = Modifier.padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -437,6 +455,7 @@ fun FeatureItem(icon: ImageVector, text: String) {
     }
 }
 
+//Un Card diseñado como un botón visual para navegación rápida, mostrando un ícono y un título centrados.
 @Composable
 fun QuickAccessCard(
     icon: ImageVector,
