@@ -1,17 +1,17 @@
-// Archivo: AppNavigation.kt
 package com.example.qualitywash.ui.Navigation
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.qualitywash.ui.Screen.HomeScreen
 import com.example.qualitywash.ui.Screen.LoginScreen
-import com.example.qualitywash.ui.Screen.PerfilScreen // Asegúrate de tener este import
+import com.example.qualitywash.ui.Screen.PerfilScreen
 import com.example.qualitywash.ui.Screen.RegisterScreen
 import com.example.qualitywash.ui.Screen.WashScreen
 
-// Definición de rutas (asumiendo que PERFIL ya está aquí)
+// Definición de rutas
 object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
@@ -30,11 +30,16 @@ fun AppNavigation(
         navController = navController,
         startDestination = startDestination
     ) {
-        // Pantalla de Login (SIN CAMBIOS)
+
+        // 1. Pantalla de Login (MVVM/Rutas Optimizadas)
         composable(Routes.LOGIN) {
             LoginScreen(
                 onLoginSuccess = {
-                    navController.navigate(Routes.HOME) { popUpTo(Routes.LOGIN) { inclusive = true } }
+                    // Navega a HOME y limpia la pila, eliminando Login
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 },
                 onNavigateToRegister = {
                     navController.navigate(Routes.REGISTER)
@@ -42,24 +47,28 @@ fun AppNavigation(
             )
         }
 
-        // Pantalla de Registro (SIN CAMBIOS)
+        // 2. Pantalla de Registro (MVVM/Rutas Optimizadas)
         composable(Routes.REGISTER) {
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.navigate(Routes.HOME) { popUpTo(Routes.REGISTER) { inclusive = true } }
+                    // Navega a HOME y limpia la pila, eliminando Register
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.REGISTER) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 },
                 onNavigateToLogin = {
+                    // Simplemente vuelve a la pantalla anterior (Login)
                     navController.popBackStack()
                 }
             )
         }
 
-        // Pantalla Home (SIN CAMBIOS)
+        // 3. Pantalla Home (Rutas sin cambios)
         composable(Routes.HOME) {
             HomeScreen(
+                // La lógica de logout aquí queda como fallback, pero la principal es de PerfilScreen
                 onLogout = {
-                    // Esta lógica de logout será reemplazada por la que viene de Perfil,
-                    // pero la mantenemos por si la usas en otro lado.
                     navController.navigate(Routes.LOGIN) { popUpTo(0) { inclusive = true } }
                 },
                 onNavigateToWash = {
@@ -71,24 +80,22 @@ fun AppNavigation(
             )
         }
 
-        // 🚨 PANTALLA DE PERFIL: ÚNICA SECCIÓN CON CAMBIOS
+        // 4. Pantalla de Perfil (Con lógica de Logout completa)
         composable(Routes.PERFIL) {
             PerfilScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
-                // Implementación de la navegación al completar el logout:
                 onLogoutComplete = {
-                    // Navega al Login y borra *toda* la pila de navegación (Home, Perfil, etc.)
+                    // Navega al Login y limpia *toda* la pila de navegación.
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
             )
         }
-        // FIN DE LA ÚNICA SECCIÓN CON CAMBIOS
 
-        // Pantalla de Lavado (SIN CAMBIOS)
+        // 5. Pantalla de Lavado (Rutas sin cambios)
         composable(Routes.WASH) {
             WashScreen(
                 onNavigateBack = {

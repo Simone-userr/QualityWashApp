@@ -11,12 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -31,9 +26,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
-import com.example.qualitywash.ui.Data.UserRepository
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.qualitywash.ui.viewModel.RegisterViewModel
+import com.example.qualitywash.ui.viewModel.RegisterViewModelFactory
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
@@ -41,19 +37,32 @@ fun RegisterScreen(
     onNavigateToLogin: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
 
-    var nameError by remember { mutableStateOf<String?>(null) }
-    var emailError by remember { mutableStateOf<String?>(null) }
-    var passwordError by remember { mutableStateOf<String?>(null) }
-    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
+    // 1. Obtener el ViewModel y su estado
+    val viewModel: RegisterViewModel = viewModel(factory = RegisterViewModelFactory())
+    val uiState by viewModel.uiState.collectAsState()
 
+    // 2. Estados locales para visibilidad (solo UI)
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+
+    // 3. Efecto para manejar la NAVEGACIÓN después del éxito
+    LaunchedEffect(uiState.isRegistrationSuccessful) {
+        if (uiState.isRegistrationSuccessful) {
+            delay(300)
+            onRegisterSuccess()
+            viewModel.resetRegistrationState()
+        }
+    }
+
+    // 4. Efecto para mostrar el TOAST (mensajes de error/éxito)
+    LaunchedEffect(uiState.showToastMessage) {
+        uiState.showToastMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            viewModel.consumedToastMessage()
+        }
+    }
 
     val gradientColors = listOf(
         Color(0xFF667eea),
@@ -120,35 +129,23 @@ fun RegisterScreen(
                 ) {
                     // Nombre Input
                     OutlinedTextField(
-                        value = name,
-                        onValueChange = {
-                            name = it
-                            nameError = validateName(it)
-                        },
+                        value = uiState.name,
+                        onValueChange = viewModel::updateName,
                         label = { Text("Nombre completo") },
                         leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Person,
-                                contentDescription = "Nombre"
-                            )
+                            Icon(imageVector = Icons.Filled.Person, contentDescription = "Nombre")
                         },
                         trailingIcon = {
-                            if (name.isNotEmpty()) {
-                                IconButton(onClick = { name = "" }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Clear,
-                                        contentDescription = "Limpiar"
-                                    )
+                            if (uiState.name.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.updateName("") }) {
+                                    Icon(imageVector = Icons.Filled.Clear, contentDescription = "Limpiar")
                                 }
                             }
                         },
-                        isError = nameError != null,
+                        isError = uiState.nameError != null,
                         supportingText = {
-                            nameError?.let {
-                                Text(
-                                    text = it,
-                                    color = MaterialTheme.colorScheme.error
-                                )
+                            uiState.nameError?.let {
+                                Text(text = it, color = MaterialTheme.colorScheme.error)
                             }
                         },
                         keyboardOptions = KeyboardOptions(
@@ -160,42 +157,31 @@ fun RegisterScreen(
                         ),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !uiState.isLoading
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Email Input
                     OutlinedTextField(
-                        value = email,
-                        onValueChange = {
-                            email = it
-                            emailError = validateEmail(it)
-                        },
+                        value = uiState.email,
+                        onValueChange = viewModel::updateEmail,
                         label = { Text("Email") },
                         leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Email,
-                                contentDescription = "Email"
-                            )
+                            Icon(imageVector = Icons.Filled.Email, contentDescription = "Email")
                         },
                         trailingIcon = {
-                            if (email.isNotEmpty()) {
-                                IconButton(onClick = { email = "" }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Clear,
-                                        contentDescription = "Limpiar"
-                                    )
+                            if (uiState.email.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.updateEmail("") }) {
+                                    Icon(imageVector = Icons.Filled.Clear, contentDescription = "Limpiar")
                                 }
                             }
                         },
-                        isError = emailError != null,
+                        isError = uiState.emailError != null,
                         supportingText = {
-                            emailError?.let {
-                                Text(
-                                    text = it,
-                                    color = MaterialTheme.colorScheme.error
-                                )
+                            uiState.emailError?.let {
+                                Text(text = it, color = MaterialTheme.colorScheme.error)
                             }
                         },
                         keyboardOptions = KeyboardOptions(
@@ -207,54 +193,33 @@ fun RegisterScreen(
                         ),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !uiState.isLoading
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Password Input
                     OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            passwordError = validatePassword(it)
-                            // Re-validar confirmación si ya tiene contenido
-                            if (confirmPassword.isNotEmpty()) {
-                                confirmPasswordError = validateConfirmPassword(password, confirmPassword)
-                            }
-                        },
+                        value = uiState.password,
+                        onValueChange = viewModel::updatePassword,
                         label = { Text("Contraseña") },
                         leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Lock,
-                                contentDescription = "Contraseña"
-                            )
+                            Icon(imageVector = Icons.Filled.Lock, contentDescription = "Contraseña")
                         },
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
-                                    imageVector = if (passwordVisible)
-                                        Icons.Filled.Visibility
-                                    else
-                                        Icons.Filled.VisibilityOff,
-                                    contentDescription = if (passwordVisible)
-                                        "Ocultar contraseña"
-                                    else
-                                        "Mostrar contraseña"
+                                    imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
                                 )
                             }
                         },
-                        visualTransformation = if (passwordVisible)
-                            VisualTransformation.None
-                        else
-                            PasswordVisualTransformation(),
-                        isError = passwordError != null,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        isError = uiState.passwordError != null,
                         supportingText = {
-                            if (passwordError != null) {
-                                Text(
-                                    text = passwordError!!,
-                                    color = MaterialTheme.colorScheme.error
-                                )
+                            if (uiState.passwordError != null) {
+                                Text(text = uiState.passwordError!!, color = MaterialTheme.colorScheme.error)
                             } else {
                                 Text(
                                     text = "Mínimo 8 caracteres, 1 mayúscula, 1 número",
@@ -271,50 +236,33 @@ fun RegisterScreen(
                         ),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !uiState.isLoading
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Confirm Password Input
                     OutlinedTextField(
-                        value = confirmPassword,
-                        onValueChange = {
-                            confirmPassword = it
-                            confirmPasswordError = validateConfirmPassword(password, it)
-                        },
+                        value = uiState.confirmPassword,
+                        onValueChange = viewModel::updateConfirmPassword,
                         label = { Text("Confirmar contraseña") },
                         leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Lock,
-                                contentDescription = "Confirmar contraseña"
-                            )
+                            Icon(imageVector = Icons.Filled.Lock, contentDescription = "Confirmar contraseña")
                         },
                         trailingIcon = {
                             IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                                 Icon(
-                                    imageVector = if (confirmPasswordVisible)
-                                        Icons.Filled.Visibility
-                                    else
-                                        Icons.Filled.VisibilityOff,
-                                    contentDescription = if (confirmPasswordVisible)
-                                        "Ocultar contraseña"
-                                    else
-                                        "Mostrar contraseña"
+                                    imageVector = if (confirmPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = if (confirmPasswordVisible) "Ocultar contraseña" else "Mostrar contraseña"
                                 )
                             }
                         },
-                        visualTransformation = if (confirmPasswordVisible)
-                            VisualTransformation.None
-                        else
-                            PasswordVisualTransformation(),
-                        isError = confirmPasswordError != null,
+                        visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        isError = uiState.confirmPasswordError != null,
                         supportingText = {
-                            confirmPasswordError?.let {
-                                Text(
-                                    text = it,
-                                    color = MaterialTheme.colorScheme.error
-                                )
+                            uiState.confirmPasswordError?.let {
+                                Text(text = it, color = MaterialTheme.colorScheme.error)
                             }
                         },
                         keyboardOptions = KeyboardOptions(
@@ -324,56 +272,53 @@ fun RegisterScreen(
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 focusManager.clearFocus()
-                                attemptRegister(
-                                    context,
-                                    name, email, password, confirmPassword,
-                                    nameError, emailError, passwordError, confirmPasswordError,
-                                    onUpdateErrors = { n, e, p, c ->
-                                        nameError = n
-                                        emailError = e
-                                        passwordError = p
-                                        confirmPasswordError = c
-                                    },
-                                    onSuccess = onRegisterSuccess
-                                )
+                                viewModel.register()
                             }
                         ),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !uiState.isLoading
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Botón de Registro
+                    // Botón de Registro con estado de carga
                     Button(
-                        onClick = {
-                            attemptRegister(
-                                context,
-                                name, email, password, confirmPassword,
-                                nameError, emailError, passwordError, confirmPasswordError,
-                                onUpdateErrors = { n, e, p, c ->
-                                    nameError = n
-                                    emailError = e
-                                    passwordError = p
-                                    confirmPasswordError = c
-                                },
-                                onSuccess = onRegisterSuccess
-                            )
-                        },
+                        onClick = viewModel::register,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF667eea)
-                        )
+                        ),
+                        enabled = !uiState.isLoading
                     ) {
-                        Text(
-                            text = "Registrarse",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (uiState.isLoading) {
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Registrando...",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "Registrarse",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -390,7 +335,7 @@ fun RegisterScreen(
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
-                TextButton(onClick = onNavigateToLogin) {
+                TextButton(onClick = onNavigateToLogin, enabled = !uiState.isLoading) {
                     Text(
                         text = "Inicia sesión",
                         color = Color.White,
@@ -401,85 +346,6 @@ fun RegisterScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
-// Funciones de validación
-private fun validateName(name: String): String? {
-    return when {
-        name.isEmpty() -> "El nombre es requerido"
-        name.length < 3 -> "El nombre debe tener al menos 3 caracteres"
-        !name.matches(Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$")) -> "Solo se permiten letras"
-        else -> null
-    }
-}
-
-private fun validateEmail(email: String): String? {
-    return when {
-        email.isEmpty() -> "El email es requerido"
-        !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Email inválido"
-        else -> null
-    }
-}
-
-private fun validatePassword(password: String): String? {
-    return when {
-        password.isEmpty() -> "La contraseña es requerida"
-        password.length < 8 -> "Mínimo 8 caracteres"
-        !password.any { it.isUpperCase() } -> "Debe contener al menos una mayúscula"
-        !password.any { it.isDigit() } -> "Debe contener al menos un número"
-        else -> null
-    }
-}
-
-private fun validateConfirmPassword(password: String, confirmPassword: String): String? {
-    return when {
-        confirmPassword.isEmpty() -> "Confirma tu contraseña"
-        password != confirmPassword -> "Las contraseñas no coinciden"
-        else -> null
-    }
-}
-
-private fun attemptRegister(
-    context: android.content.Context,
-    name: String,
-    email: String,
-    password: String,
-    confirmPassword: String,
-    nameError: String?,
-    emailError: String?,
-    passwordError: String?,
-    confirmPasswordError: String?,
-    onUpdateErrors: (String?, String?, String?, String?) -> Unit,
-    onSuccess: () -> Unit
-) {
-    val finalNameError = validateName(name)
-    val finalEmailError = validateEmail(email)
-    val finalPasswordError = validatePassword(password)
-    val finalConfirmPasswordError = validateConfirmPassword(password, confirmPassword)
-
-    onUpdateErrors(
-        finalNameError,
-        finalEmailError,
-        finalPasswordError,
-        finalConfirmPasswordError
-    )
-
-    if (finalNameError == null &&
-        finalEmailError == null &&
-        finalPasswordError == null &&
-        finalConfirmPasswordError == null) {
-
-        // Registrar usuario en el repositorio
-        val (success, message) = UserRepository.registerUser(name, email, password)
-
-        if (success) {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            onSuccess()
-        } else {
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            onUpdateErrors(null, message, null, null)
         }
     }
 }
