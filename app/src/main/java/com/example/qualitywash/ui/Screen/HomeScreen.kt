@@ -90,7 +90,7 @@ fun HomeScreen(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color(0xFF667eea),
+                        containerColor = Color(0xFF00A896),
                         titleContentColor = Color.White,
                         navigationIconContentColor = Color.White
                     )
@@ -132,8 +132,8 @@ fun DrawerContent(
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                Color(0xFF667eea),
-                                Color(0xFF764ba2)
+                                Color(0xFF05668D),
+                                Color(0xFF02C39A)
                             )
                         )
                     )
@@ -264,9 +264,9 @@ fun MainContent(
     userName: String
 ) {
     val gradientColors = listOf(
-        Color(0xFF667eea),
-        Color(0xFF764ba2),
-        Color(0xFFf093fb)
+        Color(0xFF00A896),
+        Color(0xFF05668D),
+        Color(0xFF02C39A)
     )
     //Establece un fondo con un degradado de color que ocupa toda la pantalla.
     Box(

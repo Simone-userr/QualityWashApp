@@ -173,6 +173,8 @@ class RegisterViewModel(
             password.length < 8 -> "Mínimo 8 caracteres"
             !password.any { it.isUpperCase() } -> "Debe contener al menos una mayúscula"
             !password.any { it.isDigit() } -> "Debe contener al menos un número"
+            !password.any { it.isLowerCase() } -> "Debe contener al menos una minúscula"
+            !password.any { !it.isLetterOrDigit() } -> "Debe contener al menos un carácter especial"
             else -> null
         }
     }

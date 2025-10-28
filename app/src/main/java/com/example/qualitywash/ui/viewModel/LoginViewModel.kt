@@ -72,6 +72,11 @@ class LoginViewModel(
 
         val passwordError = when {
             _uiState.value.password.isEmpty() -> "La contraseña es requerida"
+            _uiState.value.password.length < 8 -> "La contraseña debe tener al menos 8 caracteres"
+            !_uiState.value.password.any { it.isDigit() } -> "La contraseña debe contener al menos un número"
+            !_uiState.value.password.any { it.isUpperCase() } -> "La contraseña debe contener al menos una mayúscula"
+            !_uiState.value.password.any { it.isLowerCase() } -> "La contraseña debe contener al menos una minúscula"
+            !_uiState.value.password.any { !it.isLetterOrDigit() } -> "La contraseña debe contener al menos un carácter especial"
             else -> null
         }
 

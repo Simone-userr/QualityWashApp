@@ -65,9 +65,9 @@ fun LoginScreen(
     }
 
     val gradientColors = listOf(
-        Color(0xFF667eea),
-        Color(0xFF764ba2),
-        Color(0xFFf093fb)
+        Color(0xFF00A896),
+        Color(0xFF05668D),
+        Color(0xFF02C39A)
     )
 
     Box(
