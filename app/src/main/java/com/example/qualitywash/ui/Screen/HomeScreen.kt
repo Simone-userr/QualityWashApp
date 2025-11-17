@@ -1,8 +1,12 @@
 package com.example.qualitywash.ui.Screen
 
+import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -12,62 +16,57 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import com.example.qualitywash.ui.Data.User
 import com.example.qualitywash.ui.Data.UserRepository
+import com.example.qualitywash.ui.Data.UserRole
 import kotlinx.coroutines.launch
+import com.example.qualitywash.ui.Data.
 
 
-//OptIn anotacion que permite utilizar componentes o APIs de material3
+//Pantalla principal de la aplicación que utiliza un ModalNavigationDrawer, para el menú lateral.
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    //Parametros que recibira la funcion para concretar la navegacion entre Screen
     onLogout: () -> Unit = {},
     onNavigateToWash: () -> Unit = {},
     onNavigateToPerfil: () -> Unit,
     onNavigateToTienda: () -> Unit = {}
 ) {
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed) //Crea y recuerda el estado del menu lateral (Drawer)
-    val scope = rememberCoroutineScope()                                     //Obtiene un scope de corrutinas necesario para ejecutar acciones
-    val currentUser = UserRepository.getCurrentUser()                        //Llama al repositorio de datos para obtener infomarcion del usuario actualmente iniciado
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    // Obtenemos el usuario actual para mostrar su información, foto y rol
+    val currentUser = UserRepository.getCurrentUser()
 
-    //Componente principal que implementa el menu lateral desplegable
+    // Lógica para cerrar el Drawer y navegar a un destino específico
+    val navigateAndCloseDrawer: (()->Unit) -> Unit = { navigationAction ->
+        scope.launch { drawerState.close() }
+        navigationAction()
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
-        //drawerContent: define el contenido del menú lateral, llamando al componente DrawerContent y pasándole la lógica para cerrar el menú y navegar/cerrar sesión.
         drawerContent = {
             DrawerContent(
                 currentUser = currentUser,
-                onCloseDrawer = {
-                    scope.launch { drawerState.close() }
-                },
-                onLogout = {
-                    scope.launch { drawerState.close() }
-                    UserRepository.logoutUser()
-                    onLogout()
-                },
-                onNavigateToWash = {
-                    scope.launch { drawerState.close() }
-                    onNavigateToWash()
-                },
-                onNavigateToPerfil = onNavigateToPerfil,
-                onNavigateToTienda = {
-                    scope.launch { drawerState.close() }
-                    onNavigateToTienda()
-                }
+                onLogout = { navigateAndCloseDrawer { UserRepository.logoutUser(); onLogout() } },
+                onNavigateToWash = { navigateAndCloseDrawer(onNavigateToWash) },
+                onNavigateToPerfil = { navigateAndCloseDrawer(onNavigateToPerfil) },
+                onNavigateToTienda = { navigateAndCloseDrawer(onNavigateToTienda) }
             )
         }
     ) {
-        //La estructura base de la pantalla que organiza los componentes visuales: topBar
         Scaffold(
-            //Define la barra de la aplicación en la parte superior.
             topBar = {
                 TopAppBar(
                     title = {
@@ -76,17 +75,28 @@ fun HomeScreen(
                             fontWeight = FontWeight.Bold
                         )
                     },
-                    //Define el ícono de la izquierda que, al hacer clic, usa el scope.launch { drawerState.open() } para abrir el menú lateral.
                     navigationIcon = {
                         IconButton(onClick = {
-                            scope.launch {
-                                drawerState.open()
-                            }
+                            scope.launch { drawerState.open() }
                         }) {
-                            Icon(
-                                imageVector = Icons.Filled.Person,
-                                contentDescription = "Menú"
-                            )
+                            // Mostrar foto de perfil si existe, sino el ícono de persona
+                            val photoUri = currentUser?.photoUri
+                            if (photoUri != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(Uri.parse(photoUri)),
+                                    contentDescription = "Perfil",
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .border(2.dp, Color.White, CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Filled.Person,
+                                    contentDescription = "Menú"
+                                )
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -96,44 +106,45 @@ fun HomeScreen(
                     )
                 )
             }
-        ) { // El área de contenido principal de la pantalla, que se muestra debajo de la barra superior, recibiendo los paddings generados por el Scaffold
-            paddingValues ->
+        ) { paddingValues ->
+            // Contenido principal de la pantalla
             MainContent(
                 modifier = Modifier.padding(paddingValues),
-                userName = currentUser?.name ?: "Usuario"
+                userName = currentUser?.name ?: "Usuario",
+                userRole = currentUser?.role ?: UserRole.USER,
+                onNavigateToWash = onNavigateToWash,
+                onNavigateToTienda = onNavigateToTienda
             )
         }
     }
 }
 
+//Contenido del menú lateral (Drawer).
+
 @Composable
 fun DrawerContent(
     currentUser: User?,
-    onCloseDrawer: () -> Unit,
     onLogout: () -> Unit,
-    onNavigateToWash: () -> Unit = {},
+    onNavigateToWash: () -> Unit,
     onNavigateToPerfil: () -> Unit,
-    onNavigateToTienda: () -> Unit = {}
-
+    onNavigateToTienda: () -> Unit
 ) {
-    //Contenedor visual que le da estilo (color, forma) a la hoja del menú lateral.
     ModalDrawerSheet(
         drawerContainerColor = Color.White
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
-            //Un contenedor para la sección de bienvenida en la parte superior del menú, que muestra el ícono, nombre y correo del usuario.
+            // Header con foto de perfil y gradiente
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(200.dp)
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                Color(0xFF05668D),
-                                Color(0xFF02C39A)
+                                Color(0xFF05668D), // Azul oscuro
+                                Color(0xFF02C39A)  // Turquesa
                             )
                         )
                     )
@@ -141,73 +152,139 @@ fun DrawerContent(
                 contentAlignment = Alignment.BottomStart
             ) {
                 Column {
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = "Usuario",
-                        modifier = Modifier.size(64.dp),
-                        tint = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    // Foto de perfil circular
+                    Box(
+                        modifier = Modifier
+                            .size(70.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.3f))
+                            .border(3.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val photoUri = currentUser?.photoUri
+                        if (photoUri != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(Uri.parse(photoUri)),
+                                contentDescription = "Perfil",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Filled.Person,
+                                contentDescription = "Usuario",
+                                modifier = Modifier.size(40.dp),
+                                tint = Color.White
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     Text(
-                        text = currentUser?.name ?: "Usuario",
+                        text = currentUser?.name ?: "Invitado",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+
                     Text(
-                        text = currentUser?.email ?: "",
+                        text = currentUser?.email ?: "No logueado",
                         fontSize = 14.sp,
                         color = Color.White.copy(alpha = 0.9f)
                     )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Badge de rol
+                    val role = currentUser?.role ?: UserRole.USER
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White.copy(alpha = 0.3f)
+                    ) {
+                        Text(
+                            text = getRoleText(role),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Un componente reutilizable que se usa para cada opción del menú (Perfil, Tienda, Lavado, etc.).
+            // --- Opciones de Navegación ---
             DrawerMenuItem(
                 icon = Icons.Filled.Person,
-                title = "Perfil",
-                onClick = {
-                    onCloseDrawer()
-                    onNavigateToPerfil()
-                }
+                title = "Mi Perfil",
+                onClick = onNavigateToPerfil
             )
 
             DrawerMenuItem(
                 icon = Icons.Filled.ShoppingCart,
                 title = "Tienda",
-                onClick = {
-                    onCloseDrawer()
-                    onNavigateToTienda()
-                }
+                onClick = onNavigateToTienda
             )
 
             DrawerMenuItem(
                 icon = Icons.Filled.Wash,
-                title = "Lavado",
-                onClick = {
-                    onCloseDrawer()
-                    onNavigateToWash()
-                }
+                title = "Servicio de Lavado",
+                onClick = onNavigateToWash
             )
 
             DrawerMenuItem(
                 icon = Icons.Filled.Build,
                 title = "Servicios",
-                onClick = {
-                    onCloseDrawer()
-                }
+                onClick = { /* TODO: Implementar navegación a Servicios */ }
             )
 
-            //Una línea horizontal para separar grupos de elementos, como las opciones principales de "Cerrar Sesión".
+            // --- Opciones especiales según el rol (ADMIN/MANAGER) ---
+            val userRole = currentUser?.role
+            if (userRole == UserRole.ADMIN || userRole == UserRole.MANAGER) {
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text(
+                    text = "ADMINISTRACIÓN",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+
+                if (userRole == UserRole.ADMIN) {
+                    DrawerMenuItem(
+                        icon = Icons.Filled.People,
+                        title = "Gestionar Usuarios",
+                        onClick = { /* TODO: Implementar */ },
+                        color = Color(0xFFFF5722) // Rojo anaranjado
+                    )
+
+                    DrawerMenuItem(
+                        icon = Icons.Filled.BarChart,
+                        title = "Estadísticas",
+                        onClick = { /* TODO: Implementar */ },
+                        color = Color(0xFFFF5722)
+                    )
+                }
+
+                DrawerMenuItem(
+                    icon = Icons.Filled.Settings,
+                    title = "Gestionar Máquinas",
+                    onClick = { /* TODO: Implementar */ },
+                    color = if (userRole == UserRole.ADMIN) Color(0xFFFF5722) else Color(0xFF4CAF50) // Verde si es Manager, Rojo si es Admin
+                )
+            }
+
             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
+            // --- Cerrar Sesión ---
             DrawerMenuItem(
                 icon = Icons.Filled.ExitToApp,
                 title = "Cerrar Sesión",
                 onClick = onLogout,
-                color = Color(0xFFF44336)
+                color = Color(0xFFF44336) // Rojo vivo
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -226,15 +303,14 @@ fun DrawerContent(
     }
 }
 
+//Ítem reusable para las opciones del menú lateral.
 @Composable
 fun DrawerMenuItem(
-    // Recibe los datos y la acción para crear el ítem.
     icon: ImageVector,
     title: String,
     onClick: () -> Unit,
-    color: Color = Color(0xFF667eea)
+    color: Color = Color(0xFF667eea) // Color por defecto (Azul/Púrpura)
 ) {
-    // Un componente de Material 3 diseñado específicamente para ítems dentro de un menú lateral.
     NavigationDrawerItem(
         icon = {
             Icon(
@@ -250,25 +326,28 @@ fun DrawerMenuItem(
                 fontWeight = FontWeight.Medium
             )
         },
-        //Indica que este ítem no está marcado como actualmente seleccionado
         selected = false,
         onClick = onClick,
-        //Añade espacio horizontal y vertical alrededor del ítem para que no se pegue a los bordes.
         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
     )
 }
 
+//Contenido principal visible de la pantalla.
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent(
     modifier: Modifier = Modifier,
-    userName: String
+    userName: String,
+    userRole: UserRole,
+    onNavigateToWash: () -> Unit,
+    onNavigateToTienda: () -> Unit
 ) {
     val gradientColors = listOf(
         Color(0xFF00A896),
         Color(0xFF05668D),
         Color(0xFF02C39A)
     )
-    //Establece un fondo con un degradado de color que ocupa toda la pantalla.
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -278,14 +357,13 @@ fun MainContent(
                 )
             )
     ) {
-        //Permite que el contenido sea desplazable verticalmente si es demasiado largo para la pantalla del dispositivo.
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            //Se utiliza el componente Card de Material 3 para crear contenedores visualmente atractivos
+            // Tarjeta de bienvenida
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -300,11 +378,11 @@ fun MainContent(
                         imageVector = Icons.Filled.Star,
                         contentDescription = "Bienvenida",
                         modifier = Modifier.size(60.dp),
-                        tint = Color(0xFFFFD700)
+                        tint = Color(0xFFFFD700) // Dorado
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    // Saluda al usuario
+
                     Text(
                         text = "¡Hola, $userName!",
                         fontSize = 28.sp,
@@ -321,13 +399,32 @@ fun MainContent(
                         color = Color.Gray,
                         textAlign = TextAlign.Center
                     )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Badge de rol
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = getRoleColor(userRole).copy(alpha = 0.1f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            getRoleColor(userRole)
+                        )
+                    ) {
+                        Text(
+                            text = getRoleText(userRole),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            color = getRoleColor(userRole),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            //Contiene texto informativo sobre la empresa.
-            // Quiénes Somos
+            // Tarjeta de Información ("Quiénes Somos")
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -382,28 +479,16 @@ fun MainContent(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Características
-                    FeatureItem(
-                        icon = Icons.Filled.CheckCircle,
-                        text = "Personal capacitado y profesional"
-                    )
-                    FeatureItem(
-                        icon = Icons.Filled.CheckCircle,
-                        text = "Productos ecológicos de alta calidad"
-                    )
-                    FeatureItem(
-                        icon = Icons.Filled.CheckCircle,
-                        text = "Atención personalizada"
-                    )
-                    FeatureItem(
-                        icon = Icons.Filled.CheckCircle,
-                        text = "Precios competitivos"
-                    )
+                    FeatureItem(icon = Icons.Filled.CheckCircle, text = "Personal capacitado y profesional")
+                    FeatureItem(icon = Icons.Filled.CheckCircle, text = "Productos ecológicos de alta calidad")
+                    FeatureItem(icon = Icons.Filled.CheckCircle, text = "Atención personalizada")
+                    FeatureItem(icon = Icons.Filled.CheckCircle, text = "Precios competitivos")
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Tarjetas de acceso rápido
+            // Acceso Rápido
             Text(
                 text = "Acceso Rápido",
                 fontSize = 20.sp,
@@ -411,7 +496,7 @@ fun MainContent(
                 color = Color.White,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
-            // Un Row que contiene dos QuickAccessCards, permitiendo al usuario ir rápidamente a Tienda o Servicios. (no funcional preferible por el menu lateral)
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -419,11 +504,13 @@ fun MainContent(
                 QuickAccessCard(
                     icon = Icons.Filled.ShoppingCart,
                     title = "Tienda",
-                    modifier = Modifier.weight(1f),
+                    onClick = onNavigateToTienda,
+                    modifier = Modifier.weight(1f)
                 )
                 QuickAccessCard(
-                    icon = Icons.Filled.Build,
-                    title = "Servicios",
+                    icon = Icons.Filled.Wash,
+                    title = "Lavado",
+                    onClick = onNavigateToWash,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -435,7 +522,6 @@ fun MainContent(
 
 @Composable
 fun FeatureItem(icon: ImageVector, text: String) {
-    //Una Row simple que alinea un ícono y un texto, utilizado para las características de la empresa en la sección "Quiénes Somos".
     Row(
         modifier = Modifier.padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -443,7 +529,7 @@ fun FeatureItem(icon: ImageVector, text: String) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(0xFF4CAF50),
+            tint = Color(0xFF4CAF50), // Verde
             modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
@@ -455,14 +541,17 @@ fun FeatureItem(icon: ImageVector, text: String) {
     }
 }
 
-//Un Card diseñado como un botón visual para navegación rápida, mostrando un ícono y un título centrados.
+// Tarjeta de acceso rápido que ahora es clickable.
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickAccessCard(
     icon: ImageVector,
     title: String,
+    onClick: () -> Unit, // Añadido para hacerla funcional
     modifier: Modifier = Modifier
 ) {
     Card(
+        onClick = onClick,
         modifier = modifier.height(100.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -489,5 +578,24 @@ fun QuickAccessCard(
                 color = Color(0xFF667eea)
             )
         }
+    }
+}
+
+
+// Mapea el rol del usuario a un color específico para la interfaz.
+fun getRoleColor(role: UserRole): Color {
+    return when (role) {
+        UserRole.USER -> Color(0xFF2196F3) // Azul
+        UserRole.ADMIN -> Color(0xFFFF5722) // Naranja/Rojo
+        UserRole.MANAGER -> Color(0xFF4CAF50) // Verde
+    }
+}
+
+// Mapea el rol del usuario a un texto descriptivo con emoji.
+fun getRoleText(role: UserRole): String {
+    return when (role) {
+        UserRole.USER -> "👤 Usuario"
+        UserRole.ADMIN -> "👑 Administrador"
+        UserRole.MANAGER -> "🔧 Encargado"
     }
 }

@@ -8,37 +8,75 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+// ViewModel para gestionar el estado y las operaciones del perfil del usuario.
+// Utiliza UserRepository para la lógica de datos.
 class ProfileViewModel(
-    // Recibe el UserRepository (que es un object) como dependencia para un mejor testing
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository // Inyección de dependencia del repositorio.
 ) : ViewModel() {
 
-    fun logout() {
-        userRepository.logoutUser()
-        _userState.value = User(id="0", name="Invitado", email="No logueado", password="")
-    }
-
+    // Estado interno mutable que contiene la información del usuario actual o un objeto 'Invitado'.
     private val _userState = MutableStateFlow(
-        userRepository.getCurrentUser() ?: User(id="0", name="Invitado", email="No logueado", password="")
+        userRepository.getCurrentUser() ?: User(
+            id = "0",
+            name = "Invitado",
+            email = "No logueado",
+            password = ""
+        )
     )
-    // Se expone como StateFlow inmutable para que la UI solo pueda leerlo.
+
+    // Estado inmutable expuesto a la UI para su observación.
     val userState: StateFlow<User> = _userState
 
     init {
-        // Carga los datos al crear el ViewModel
+        // Carga el usuario al inicializar el ViewModel.
         loadCurrentUser()
     }
 
+    //Carga el usuario actual desde el repositorio y actualiza el StateFlow.
+
     private fun loadCurrentUser() {
-        // Usa viewModelScope para ejecutar operaciones en segundo plano si fuera necesario.
         viewModelScope.launch {
             val user = userRepository.getCurrentUser()
-            // Si hay un usuario logueado (después del login), actualiza el estado.
             if (user != null) {
                 _userState.value = user
             }
         }
     }
 
+    //Cierra la sesión del usuario y restablece el estado a 'Invitado'.
 
+    fun logout() {
+        userRepository.logoutUser()
+        _userState.value = User(
+            id = "0",
+            name = "Invitado",
+            email = "No logueado",
+            password = ""
+        )
+    }
+
+    //Actualiza la URI de la foto de perfil en el repositorio y refresca el estado.
+
+    fun updateProfilePhoto(photoUri: String) {
+        viewModelScope.launch {
+            if (userRepository.updateProfilePhoto(photoUri)) {
+                loadCurrentUser()
+            }
+        }
+    }
+
+
+    //Actualiza el nombre, número de teléfono y dirección del perfil en el repositorio y refresca el estado.
+
+    fun updateProfile(name: String, phoneNumber: String?, address: String?) {
+        viewModelScope.launch {
+            if (userRepository.updateUserProfile(name, phoneNumber, address)) {
+                loadCurrentUser()
+            }
+        }
+    }
+    //Fuerza una recarga de los datos del usuario actual (alias de loadCurrentUser).
+    fun refreshUser() {
+        loadCurrentUser()
+    }
 }
