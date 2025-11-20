@@ -7,11 +7,18 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,10 +41,14 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
+import com.example.qualitywash.ui.Data.PermissionsRepository
 import com.example.qualitywash.ui.Data.UserRole
+import com.example.qualitywash.ui.theme.getRoleColor
+import com.example.qualitywash.ui.theme.getRoleText
 import com.example.qualitywash.ui.viewModel.ProfileViewModel
 import com.example.qualitywash.ui.viewModel.ProfileViewModelFactory
 import java.io.File
+import androidx.core.net.toUri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,10 +62,14 @@ fun PerfilScreen(
 
     var showEditDialog by remember { mutableStateOf(false) }
     var showImageSourceDialog by remember { mutableStateOf(false) }
+    var showPermissionsExpanded by remember { mutableStateOf(false) }
     var photoUri by remember { mutableStateOf<Uri?>(null) }
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
 
-    // Launcher para la cámara
+    LaunchedEffect(user.photoUri) {
+        photoUri = if (user.photoUri != null) user.photoUri!!.toUri() else null
+    }
+
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
@@ -65,7 +80,6 @@ fun PerfilScreen(
         }
     }
 
-    // Launcher para la galería
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -76,7 +90,6 @@ fun PerfilScreen(
         }
     }
 
-    // Launcher para permisos de cámara
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -120,7 +133,6 @@ fun PerfilScreen(
                 modifier = Modifier.size(150.dp),
                 contentAlignment = Alignment.BottomEnd
             ) {
-                // Imagen de perfil
                 Box(
                     modifier = Modifier
                         .size(150.dp)
@@ -130,9 +142,9 @@ fun PerfilScreen(
                         .clickable { showImageSourceDialog = true },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (user.photoUri != null) {
+                    if (photoUri != null) {
                         Image(
-                            painter = rememberAsyncImagePainter(Uri.parse(user.photoUri)),
+                            painter = rememberAsyncImagePainter(photoUri),
                             contentDescription = "Foto de perfil",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -147,7 +159,6 @@ fun PerfilScreen(
                     }
                 }
 
-                // Botón de cámara
                 FloatingActionButton(
                     onClick = { showImageSourceDialog = true },
                     modifier = Modifier.size(45.dp),
@@ -167,10 +178,7 @@ fun PerfilScreen(
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = getRoleColor(user.role).copy(alpha = 0.2f),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    getRoleColor(user.role)
-                )
+                border = androidx.compose.foundation.BorderStroke(1.dp, getRoleColor(user.role))
             ) {
                 Text(
                     text = getRoleText(user.role),
@@ -183,7 +191,7 @@ fun PerfilScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Tarjeta de información
+            // Tarjeta de información básica
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -223,13 +231,73 @@ fun PerfilScreen(
                         )
                     }
 
-                    if (user.address != null) {
+                    if (user.addresss != null) {
                         Divider(modifier = Modifier.padding(vertical = 12.dp))
                         ProfileInfoRow(
                             icon = Icons.Filled.LocationOn,
                             label = "Dirección",
-                            value = user.address!!
+                            value = user.addresss!!
                         )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Tarjeta de permisos expandible
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = getRoleColor(user.role).copy(alpha = 0.05f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showPermissionsExpanded = !showPermissionsExpanded },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.Security,
+                                contentDescription = null,
+                                tint = getRoleColor(user.role),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Mis Permisos",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = getRoleColor(user.role)
+                            )
+                        }
+                        Icon(
+                            imageVector = if (showPermissionsExpanded)
+                                Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                            contentDescription = if (showPermissionsExpanded) "Colapsar" else "Expandir",
+                            tint = getRoleColor(user.role)
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = showPermissionsExpanded,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Column(modifier = Modifier.padding(top = 16.dp)) {
+                            val permissions = PermissionsRepository.getPermissionsByRole(user.role)
+                            permissions.forEach { permission ->
+                                PermissionItem(permission = permission)
+                                if (permission != permissions.last()) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -254,39 +322,6 @@ fun PerfilScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Permisos especiales según rol
-            if (user.role == UserRole.ADMIN || user.role == UserRole.MANAGER) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = getRoleColor(user.role).copy(alpha = 0.1f)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "🔧 Permisos Especiales",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = getRoleColor(user.role)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        if (user.role == UserRole.ADMIN) {
-                            Text("• Gestión completa del sistema", fontSize = 14.sp)
-                            Text("• Administrar usuarios", fontSize = 14.sp)
-                            Text("• Ver estadísticas", fontSize = 14.sp)
-                        } else {
-                            Text("• Gestionar máquinas de lavado", fontSize = 14.sp)
-                            Text("• Asignar turnos", fontSize = 14.sp)
-                            Text("• Ver reportes", fontSize = 14.sp)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
             // Botón cerrar sesión
             OutlinedButton(
                 onClick = {
@@ -310,7 +345,7 @@ fun PerfilScreen(
         }
     }
 
-    // Diálogo para elegir fuente de imagen
+    // Diálogos...
     if (showImageSourceDialog) {
         AlertDialog(
             onDismissRequest = { showImageSourceDialog = false },
@@ -321,16 +356,11 @@ fun PerfilScreen(
                         onClick = {
                             showImageSourceDialog = false
                             when (PackageManager.PERMISSION_GRANTED) {
-                                ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.CAMERA
-                                ) -> {
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
                                     tempPhotoUri = createImageUri(context)
                                     tempPhotoUri?.let { cameraLauncher.launch(it) }
                                 }
-                                else -> {
-                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                                }
+                                else -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -361,7 +391,6 @@ fun PerfilScreen(
         )
     }
 
-    // Diálogo de edición
     if (showEditDialog) {
         EditProfileDialog(
             user = user,
@@ -371,6 +400,41 @@ fun PerfilScreen(
                 showEditDialog = false
                 Toast.makeText(context, "Perfil actualizado", Toast.LENGTH_SHORT).show()
             }
+        )
+    }
+}
+
+@Composable
+fun PermissionItem(permission: com.example.qualitywash.ui.Data.Permission) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = permission.icon,
+            contentDescription = null,
+            tint = Color(0xFF4CAF50),
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = permission.name,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black.copy(alpha = 0.87f)
+            )
+            Text(
+                text = permission.description,
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
+        }
+        Icon(
+            imageVector = Icons.Filled.CheckCircle,
+            contentDescription = "Permitido",
+            tint = Color(0xFF4CAF50),
+            modifier = Modifier.size(20.dp)
         )
     }
 }
@@ -415,7 +479,7 @@ fun EditProfileDialog(
 ) {
     var name by remember { mutableStateOf(user.name) }
     var phone by remember { mutableStateOf(user.phoneNumber ?: "") }
-    var address by remember { mutableStateOf(user.address ?: "") }
+    var address by remember { mutableStateOf(user.addresss ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -447,11 +511,7 @@ fun EditProfileDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    onSave(
-                        name,
-                        phone.ifBlank { null },
-                        address.ifBlank { null }
-                    )
+                    onSave(name, phone.ifBlank { null }, address.ifBlank { null })
                 }
             ) {
                 Text("Guardar")
@@ -463,22 +523,6 @@ fun EditProfileDialog(
             }
         }
     )
-}
-
-fun getRoleColor(role: UserRole): Color {
-    return when (role) {
-        UserRole.USER -> Color(0xFF2196F3)
-        UserRole.ADMIN -> Color(0xFFFF5722)
-        UserRole.MANAGER -> Color(0xFF4CAF50)
-    }
-}
-
-fun getRoleText(role: UserRole): String {
-    return when (role) {
-        UserRole.USER -> "👤 Usuario"
-        UserRole.ADMIN -> "👑 Administrador"
-        UserRole.MANAGER -> "🔧 Encargado"
-    }
 }
 
 fun createImageUri(context: Context): Uri {
