@@ -68,6 +68,9 @@ dependencies {
     // Coil para carga de imágenes (Soporta URI de cámara/galería)
     implementation("io.coil-kt:coil-compose:2.7.0")
 
+    // Librería de gráficos para Jetpack Compose (YCharts)
+    implementation("com.github.ymedialabs:ycharts:2.0.0")
+
     // CameraX (Funcionalidad de cámara completa, si se requiere)
     // Nota: Aunque ProfileScreen usa ActivityResultContracts.TakePicture, estas libs son útiles si planeas previsualizar o extender la funcionalidad de la cámara.
     implementation("androidx.camera:camera-camera2:1.5.1")

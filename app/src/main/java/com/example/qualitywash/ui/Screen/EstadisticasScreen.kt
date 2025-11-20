@@ -19,6 +19,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.qualitywash.ui.Data.Product
 import com.example.qualitywash.ui.Data.ProductsRepository
+import androidx.compose.ui.unit.sp
+import com.github.ymedialabs.ycharts.BarChart
+import com.github.ymedialabs.ycharts.model.BarChartData
+import com.github.ymedialabs.ycharts.model.BarData
+import com.github.ymedialabs.ycharts.model.ChartData
+import com.github.ymedialabs.ycharts.model.ChartType
+import com.github.ymedialabs.ycharts.model.LegendData
+import com.github.ymedialabs.ycharts.model.LegendLabel
+import com.github.ymedialabs.ycharts.model.YAxisData
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,6 +85,10 @@ fun EstadisticasScreen(
             }
 
             item {
+                VentasPorProductoBarChart(productosMasVendidos)
+            }
+
+            item {
                 Text(
                     text = "Productos Más Vendidos (Top 5)",
                     style = MaterialTheme.typography.titleLarge,
@@ -124,6 +137,56 @@ fun StatCard(
                 Text(title, fontSize = 14.sp, color = Color.Gray)
                 Text(value, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = color)
             }
+        }
+    }
+}
+
+@Composable
+fun VentasPorProductoBarChart(productosMasVendidos: List<Pair<Product, Int>>) {
+    val barData = productosMasVendidos.mapIndexed { index, (producto, cantidad) ->
+        BarData(
+            point = cantidad.toFloat(),
+            label = producto.nombre.split(" ").first(), // Usar solo la primera palabra del nombre como etiqueta
+            color = Color(0xFF00A896).copy(alpha = 0.8f)
+        )
+    }
+
+    val barChartData = BarChartData(
+        chartData = barData,
+        yAxisData = YAxisData(
+            numberOfLabels = 5,
+            labelAndAxisLineColor = Color.Gray,
+            axisBottomPadding = 10.dp
+        ),
+        backgroundColor = Color.White,
+        chartType = ChartType.Vertical,
+        legendData = LegendData(
+            legendLabelList = listOf(
+                LegendLabel(
+                    "Unidades Vendidas",
+                    Color(0xFF00A896)
+                )
+            )
+        )
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Gráfico de Ventas por Producto",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            BarChart(
+                modifier = Modifier.fillMaxSize(),
+                barChartData = barChartData
+            )
         }
     }
 }
