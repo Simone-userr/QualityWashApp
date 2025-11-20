@@ -10,6 +10,7 @@ import com.example.qualitywash.ui.Screen.HomeScreen
 import com.example.qualitywash.ui.Screen.LoginScreen
 import com.example.qualitywash.ui.Screen.PerfilScreen
 import com.example.qualitywash.ui.Screen.RegisterScreen
+import com.example.qualitywash.ui.Screen.EstadisticasScreen
 import com.example.qualitywash.ui.Screen.TiendaScreen
 import com.example.qualitywash.ui.Screen.WashScreen
 
@@ -25,6 +26,7 @@ object Routes {
 
     const val GESTION_USUARIO = "gestion_usuario"
     const val GESTION_PRODUCTO = "gestion_producto"
+    const val ESTADISTICAS = "estadisticas"
 }
 
 @Composable
@@ -88,6 +90,10 @@ fun AppNavigation(
                 //Navega desde home a TiendaScreen
                 onNavigateToTienda = {
                     navController.navigate(Routes.TIENDA)
+                },
+                //Navega desde home a EstadisticasScreen
+                onNavigateToEstadisticas = {
+                    navController.navigate(Routes.ESTADISTICAS)
                 }
             )
         }
@@ -128,6 +134,15 @@ fun AppNavigation(
         //7. Pantalla de Gestion de Usuarios
         composable(Routes.GESTION_USUARIO) {
             GestionUsuariosScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        //8. Pantalla de Estadísticas
+        composable(Routes.ESTADISTICAS) {
+            EstadisticasScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

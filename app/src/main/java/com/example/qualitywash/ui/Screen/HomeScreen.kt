@@ -41,7 +41,9 @@ fun HomeScreen(
     onNavigateToPerfil: () -> Unit,
     onNavigateToTienda: () -> Unit = {},
     // 👈 1. AÑADIDO: Nuevo parámetro para la navegación de gestión de usuarios
-    onNavigateToGestionUsuarios: () -> Unit = {}
+    onNavigateToGestionUsuarios: () -> Unit = {},
+    // 👈 5. AÑADIDO: Nuevo parámetro para la navegación a estadísticas
+    onNavigateToEstadisticas: () -> Unit = {}
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -76,6 +78,11 @@ fun HomeScreen(
                 onNavigateToGestionUsuarios = {
                     scope.launch { drawerState.close() }
                     onNavigateToGestionUsuarios()
+                },
+                // 👈 6. PASANDO el nuevo parámetro a DrawerContent
+                onNavigateToEstadisticas = {
+                    scope.launch { drawerState.close() }
+                    onNavigateToEstadisticas()
                 }
             )
         }
@@ -142,7 +149,9 @@ fun DrawerContent(
     onNavigateToPerfil: () -> Unit,
     onNavigateToTienda: () -> Unit = {},
     // 👈 3. AÑADIDO: Nuevo parámetro para la navegación de gestión de usuarios
-    onNavigateToGestionUsuarios: () -> Unit
+    onNavigateToGestionUsuarios: () -> Unit,
+    // 👈 7. AÑADIDO: Nuevo parámetro para la navegación a estadísticas
+    onNavigateToEstadisticas: () -> Unit
 ) {
     ModalDrawerSheet(
         drawerContainerColor = Color.White
@@ -249,7 +258,7 @@ fun DrawerContent(
             )
 
             // Opciones especiales según el rol
-            if (currentUser?.role == UserRole.ADMIN || currentUser?.role == UserRole.Cliente) {
+            if (currentUser?.role == UserRole.ADMIN) {
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                 Text(
@@ -269,21 +278,7 @@ fun DrawerContent(
                         color = Color(0xFFFF5722)
                     )
 
-                    DrawerMenuItem(
-                        icon = Icons.Filled.BarChart,
-                        title = "Estadísticas",
-                        onClick = { /* TODO: Implementar */ },
-                        color = Color(0xFFFF5722)
-                    )
-                }
-
-                DrawerMenuItem(
-                    icon = Icons.Filled.Settings,
-                    title = "Gestionar Máquinas",
-                    onClick = { /* TODO: Implementar */ },
-                    color = if (currentUser?.role == UserRole.ADMIN)
-                        Color(0xFFFF5722) else Color(0xFF4CAF50)
-                )
+// Botón "Gestionar Máquinas" eliminado según solicitud del usuario.
             }
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))
