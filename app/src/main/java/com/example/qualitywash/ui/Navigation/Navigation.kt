@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.qualitywash.ui.Screen.GestionUsuariosScreen
 import com.example.qualitywash.ui.Screen.HomeScreen
 import com.example.qualitywash.ui.Screen.LoginScreen
 import com.example.qualitywash.ui.Screen.PerfilScreen
@@ -21,6 +22,9 @@ object Routes {
     const val PERFIL = "perfil"
 
     const val TIENDA = "tienda"
+
+    const val GESTION_USUARIO = "gestion_usuario"
+    const val GESTION_PRODUCTO = "gestion_producto"
 }
 
 @Composable
@@ -119,6 +123,14 @@ fun AppNavigation(
                     navController.popBackStack()
                 }
 
+            )
+        }
+        //7. Pantalla de Gestion de Usuarios
+        composable(Routes.GESTION_USUARIO) {
+            GestionUsuariosScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
     }

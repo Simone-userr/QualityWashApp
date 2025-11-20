@@ -39,7 +39,9 @@ fun HomeScreen(
     onLogout: () -> Unit = {},
     onNavigateToWash: () -> Unit = {},
     onNavigateToPerfil: () -> Unit,
-    onNavigateToTienda: () -> Unit = {}
+    onNavigateToTienda: () -> Unit = {},
+    // 👈 1. AÑADIDO: Nuevo parámetro para la navegación de gestión de usuarios
+    onNavigateToGestionUsuarios: () -> Unit = {}
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -69,6 +71,11 @@ fun HomeScreen(
                 onNavigateToTienda = {
                     scope.launch { drawerState.close() }
                     onNavigateToTienda()
+                },
+                // 👈 2. PASANDO el nuevo parámetro a DrawerContent
+                onNavigateToGestionUsuarios = {
+                    scope.launch { drawerState.close() }
+                    onNavigateToGestionUsuarios()
                 }
             )
         }
@@ -133,7 +140,9 @@ fun DrawerContent(
     onLogout: () -> Unit,
     onNavigateToWash: () -> Unit = {},
     onNavigateToPerfil: () -> Unit,
-    onNavigateToTienda: () -> Unit = {}
+    onNavigateToTienda: () -> Unit = {},
+    // 👈 3. AÑADIDO: Nuevo parámetro para la navegación de gestión de usuarios
+    onNavigateToGestionUsuarios: () -> Unit
 ) {
     ModalDrawerSheet(
         drawerContainerColor = Color.White
@@ -255,7 +264,8 @@ fun DrawerContent(
                     DrawerMenuItem(
                         icon = Icons.Filled.People,
                         title = "Gestionar Usuarios",
-                        onClick = { /* TODO: Implementar */ },
+                        // 👈 4. USANDO el nuevo parámetro para navegar
+                        onClick = onNavigateToGestionUsuarios,
                         color = Color(0xFFFF5722)
                     )
 
@@ -576,4 +586,3 @@ fun QuickAccessCard(
         }
     }
 }
-
