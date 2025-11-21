@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import com.example.qualitywash.ui.Data.ItemCarrito
 import com.example.qualitywash.ui.Data.ProductosRepository
 import com.example.qualitywash.ui.Data.UserRepository
+import com.example.qualitywash.ui.Data.HistoryRepository
+import com.example.qualitywash.ui.Data.Product
+import com.example.qualitywash.ui.Data.ProductType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,34 +28,30 @@ class TiendaViewModel : ViewModel() {
     val mostrarPanelCarrito: StateFlow<Boolean> = _mostrarPanelCarrito.asStateFlow()
 
     // Total del carrito
-    val totalCarrito: StateFlow<Double> = MutableStateFlow(0.0).apply {
-        // Observar cambios en el carrito y calcular total
-    }
+    private val _totalCarrito = MutableStateFlow(0.0)
+    val totalCarrito: StateFlow<Double> = _totalCarrito.asStateFlow()
 
     // Cantidad total de items en el carrito
-    val cantidadTotalItems: StateFlow<Int> = MutableStateFlow(0).apply {
-        // Observar cambios y contar items
-    }
+    private val _cantidadTotalItems = MutableStateFlow(0)
+    val cantidadTotalItems: StateFlow<Int> = _cantidadTotalItems.asStateFlow()
 
     init {
         cargarProductos()
     }
 
     private fun cargarProductos() {
-        // Aquí cargarías los productos desde una fuente de datos
-        // Por ahora usaremos datos de ejemplo
         _productos.value = listOf(
             ProductosRepository(
                 id = 1,
                 nombre = "Suavizante Soft",
                 descripcion = "Suavizante Soft de 1 Litro, formulado para ofrecer suavidad a cada lavado",
                 precio = 5.000,
-                imagen = R.drawable.suavizante// Reemplazar con tu drawable
+                imagen = R.drawable.suavizante
             ),
             ProductosRepository(
                 id = 2,
                 nombre = "Detergente Ariel",
-                descripcion = "Detergente líquido concentrado para lavar ropa blanca y de color. ",
+                descripcion = "Detergente líquido concentrado para lavar ropa blanca y de color.",
                 precio = 10.000,
                 imagen = R.drawable.detergente
             ),
@@ -85,16 +84,12 @@ class TiendaViewModel : ViewModel() {
             val itemExistente = carritoActual.find { it.producto.id == producto.id }
 
             if (itemExistente != null) {
-                // Si el producto ya existe, incrementar cantidad
                 carritoActual.map { item ->
                     if (item.producto.id == producto.id) {
                         item.copy(cantidad = item.cantidad + 1)
-                    } else {
-                        item
-                    }
+                    } else item
                 }
             } else {
-                // Si no existe, agregarlo al carrito
                 carritoActual + ItemCarrito(producto = producto, cantidad = 1)
             }
         }
@@ -102,9 +97,7 @@ class TiendaViewModel : ViewModel() {
     }
 
     fun eliminarDelCarrito(productoId: Int) {
-        _carrito.update { carritoActual ->
-            carritoActual.filter { it.producto.id != productoId }
-        }
+        _carrito.update { it.filter { item -> item.producto.id != productoId } }
         actualizarTotales()
     }
 
@@ -118,9 +111,7 @@ class TiendaViewModel : ViewModel() {
             carritoActual.map { item ->
                 if (item.producto.id == productoId) {
                     item.copy(cantidad = nuevaCantidad)
-                } else {
-                    item
-                }
+                } else item
             }
         }
         actualizarTotales()
@@ -139,19 +130,36 @@ class TiendaViewModel : ViewModel() {
         actualizarTotales()
     }
 
+    // ✅✅✅ COMPRA REAL + REGISTRO EN HISTORIAL
     fun procesarCompra() {
-        // Aquí implementarías la lógica de compra
-        // Por ejemplo, enviar a un servidor, procesar pago, etc.
+        val user = UserRepository.getCurrentUser() ?: return
+
+        _carrito.value.forEach { item ->
+            HistoryRepository.addPurchase(
+                userId = user.id,
+                product = item.producto.toProduct(),
+                quantity = item.cantidad
+            )
+        }
+
         vaciarCarrito()
         cerrarPanelCarrito()
     }
 
     private fun actualizarTotales() {
-        // Esta función se llamará cada vez que el carrito cambie
-        val total = _carrito.value.sumOf { it.subtotal }
-        val cantidad = _carrito.value.sumOf { it.cantidad }
-
-        (totalCarrito as MutableStateFlow).value = total
-        (cantidadTotalItems as MutableStateFlow).value = cantidad
+        _totalCarrito.value = _carrito.value.sumOf { it.subtotal }
+        _cantidadTotalItems.value = _carrito.value.sumOf { it.cantidad }
     }
+}
+
+// ✅✅✅ EXTENSIÓN PARA CONVERTIR TU PRODUCTO VIEJO AL MODELO NUEVO
+fun ProductosRepository.toProduct(): Product {
+    return Product(
+        id = this.id.toString(),
+        name = this.nombre,
+        type = ProductType.PRODUCTO_FISICO,
+        price = this.precio,
+        stock = 999, // temporal hasta que hagas inventario real
+        description = this.descripcion
+    )
 }
